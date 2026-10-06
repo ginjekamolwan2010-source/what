@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>SoundScout – วัดเสียงดัง หาจุดเงียบ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Noto+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#EDF1F0; --surface:#FFFFFF; --surface-2:#E3EAE8; --ink:#13242B; --ink-2:#4A5F67; --line:#CBD6D3;
+  --accent:#0E6B73; --accent-ink:#FFFFFF;
+  --z1:#2A9D8F; --z2:#6FA83B; --z3:#E3A008; --z4:#E2641B; --z5:#C62839;
+  --track:#D5DFDC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D181D; --surface:#15262D; --surface-2:#1C323B; --ink:#E6F0EE; --ink-2:#97ADB3; --line:#27414B;
+    --accent:#5CC4CC; --accent-ink:#06191C; --track:#24404A;
+    --z1:#3CC0AF; --z2:#8CC84F; --z3:#F2B71E; --z4:#F07D38; --z5:#EE4B5D;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D181D; --surface:#15262D; --surface-2:#1C323B; --ink:#E6F0EE; --ink-2:#97ADB3; --line:#27414B;
+  --accent:#5CC4CC; --accent-ink:#06191C; --track:#24404A;
+  --z1:#3CC0AF; --z2:#8CC84F; --z3:#F2B71E; --z4:#F07D38; --z5:#EE4B5D;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{
+  margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.6;
+  -webkit-tap-highlight-color:transparent;
+}
+.num,h1,h2,.big{font-family:"Chakra Petch","Noto Sans Thai",system-ui,sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:14px 16px 110px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0 14px}
+h1{font-size:22px;margin:0;font-weight:700;letter-spacing:.2px;line-height:1.2}
+h1 small{display:block;font-family:"Noto Sans Thai",sans-serif;font-size:12.5px;font-weight:400;color:var(--ink-2);letter-spacing:0;margin-top:2px}
+.pill{font-size:12.5px;padding:4px 11px;border-radius:99px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap;display:inline-flex;align-items:center;gap:7px}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--ink-2);display:inline-block}
+.pill.live{color:var(--ink)}
+.pill.live i{background:var(--z5);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.pill.live i{animation:none}}
+
+section.tab{display:none}
+section.tab.on{display:block}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
+.card h2{font-size:16px;margin:0 0 8px;font-weight:600}
+.muted{color:var(--ink-2)}
+.small{font-size:13px}
+
+/* dial */
+.dial{padding:18px 12px 14px;text-align:center}
+.dial svg{width:100%;max-width:340px;height:auto;display:block;margin:0 auto}
+.readout{margin-top:-74px;position:relative}
+.big{font-size:68px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.unit{font-size:15px;color:var(--ink-2);margin-left:4px;font-family:"Noto Sans Thai",sans-serif}
+.zone{margin-top:8px;font-weight:600;font-size:16px}
+.zone-sub{font-size:13px;color:var(--ink-2);margin-top:2px;min-height:20px}
+
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{width:100%;border:0;border-radius:14px;padding:15px 18px;font-weight:600;font-size:16px;background:var(--accent);color:var(--accent-ink);min-height:52px}
+.btn.stop{background:var(--z5);color:#fff}
+.btn.ghost{background:var(--surface-2);color:var(--ink)}
+.btn:disabled{opacity:.55}
+.btn:focus-visible,.nav button:focus-visible,input:focus-visible,summary:focus-visible,.link:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.link{background:none;border:0;color:var(--accent);padding:8px 4px;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 6px;text-align:center}
+.stat b{display:block;font-family:"Chakra Petch",sans-serif;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat span{font-size:11.5px;color:var(--ink-2);line-height:1.3;display:block}
+
+canvas{width:100%;height:130px;display:block}
+
+.advice{border-left:5px solid var(--z1)}
+.advice p{margin:6px 0 0}
+.tag{display:inline-block;font-size:12.5px;padding:2px 10px;border-radius:99px;background:var(--surface-2);margin:2px 4px 2px 0}
+
+details{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+summary{font-weight:600;cursor:pointer}
+input[type=text]{width:100%;font:inherit;padding:13px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);min-height:50px}
+input[type=range]{width:100%;accent-color:var(--accent);margin:8px 0}
+
+/* spots */
+.spot{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.spot:first-child{border-top:0}
+.spot .nm{font-weight:600}
+.spot .lv{font-family:"Chakra Petch",sans-serif;font-size:24px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.bar{grid-column:1/-1;height:8px;border-radius:6px;background:var(--track);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:6px}
+.spot .meta{grid-column:1/-1;font-size:12.5px;color:var(--ink-2);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.del{background:none;border:0;color:var(--ink-2);font-size:12.5px;text-decoration:underline;padding:6px 2px}
+.best{background:var(--z1);color:#fff;font-size:12px;border-radius:99px;padding:1px 9px;margin-left:6px;font-weight:600}
+.prog{height:10px;border-radius:8px;background:var(--track);overflow:hidden;margin-top:12px;display:none}
+.prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s linear}
+
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:8px 6px;border-top:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;border-top:0;color:var(--ink-2);font-size:12.5px}
+td:first-child{font-family:"Chakra Petch",sans-serif;font-weight:600;white-space:nowrap}
+ul{padding-left:20px;margin:6px 0}
+li{margin:4px 0}
+
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;padding:6px 8px calc(env(safe-area-inset-bottom,0px) + 6px);z-index:5}
+.nav button{flex:1;background:none;border:0;padding:8px 4px;border-radius:12px;font-size:12.5px;color:var(--ink-2);display:flex;flex-direction:column;align-items:center;gap:2px;min-height:54px}
+.nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav button.on{color:var(--accent);font-weight:600}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 82px);background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;font-size:14px;z-index:9;display:none;max-width:528px;margin:0 auto}
+.err{background:var(--surface-2);border-radius:12px;padding:12px 14px;margin-bottom:12px;font-size:14px;display:none}
+.btn.on{background:var(--accent);color:var(--accent-ink)}
+.mapbox{border-radius:14px;overflow:hidden;background:var(--surface-2);border:1px solid var(--line)}
+#map{height:340px;touch-action:manipulation;cursor:pointer}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>SoundScout<small>วัดเสียงดังแบบเรียลไทม์ · หาจุดที่เงียบกว่า</small></h1>
+    <span class="pill" id="status"><i></i><span id="statusTxt">หยุดอยู่</span></span>
+  </header>
+
+  <!-- ===== TAB: METER ===== -->
+  <section class="tab on" id="tab-meter">
+    <div class="err" id="err" role="alert"></div>
+
+    <div class="card dial">
+      <svg viewBox="0 0 240 135" aria-hidden="true">
+        <path id="track" d="M20 120 A100 100 0 0 1 220 120" fill="none" stroke="var(--track)" stroke-width="16" stroke-linecap="round"/>
+        <path id="arc" d="M20 120 A100 100 0 0 1 220 120" fill="none" stroke="var(--z1)" stroke-width="16" stroke-linecap="round" stroke-dasharray="0 315"/>
+        <text x="20" y="134" font-size="9" fill="var(--ink-2)" text-anchor="middle">30</text>
+        <text x="220" y="134" font-size="9" fill="var(--ink-2)" text-anchor="middle">120</text>
+      </svg>
+      <div class="readout" aria-live="off">
+        <span class="big" id="db">--</span><span class="unit">dB(A)</span>
+        <div class="zone" id="zone">แตะ “เริ่มวัด” เพื่อเริ่ม</div>
+        <div class="zone-sub" id="zoneSub">ถือมือถือให้ไมโครโฟนหันเข้าหาแหล่งเสียง</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-bottom:6px">
+      <button class="btn" id="btnStart">เริ่มวัด</button>
+    </div>
+    <div style="text-align:center;margin-bottom:12px"><button class="link" id="btnDemo">ลองโหมดจำลองเสียง (ไม่ใช้ไมค์)</button></div>
+
+    <div class="stats">
+      <div class="stat"><b id="sLeq">--</b><span>เฉลี่ย LAeq</span></div>
+      <div class="stat"><b id="sMax">--</b><span>สูงสุด</span></div>
+      <div class="stat"><b id="sMin">--</b><span>ต่ำสุด</span></div>
+      <div class="stat"><b id="sDose">0%</b><span>โดสเสียง</span></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h2>เสียงย้อนหลัง 60 วินาที</h2>
+      <canvas id="chart" aria-label="กราฟระดับเสียงย้อนหลัง"></canvas>
+    </div>
+
+    <div class="card advice" id="advice">
+      <h2 id="advTitle">คำแนะนำ</h2>
+      <p id="advBody" class="muted">เริ่มวัดเพื่อดูเวลาที่อยู่ในที่นั้นได้อย่างปลอดภัย และคำแนะนำป้องกันการได้ยิน</p>
+      <p id="advSafe"></p>
+      <p id="advQuiet"></p>
+    </div>
+
+    <details>
+      <summary>ปรับเทียบค่า (Calibration)</summary>
+      <p class="small muted">ไมค์มือถือแต่ละรุ่นให้ค่าไม่เท่ากัน ถ้ามีเครื่องวัดเสียงมาตรฐานหรือแอพอ้างอิง ให้วางไว้ข้างกันแล้วปรับค่าชดเชยจนตรงกัน</p>
+      <div class="row" style="align-items:center">
+        <input type="range" id="cal" min="-30" max="30" step="1" value="0" aria-label="ค่าชดเชย dB">
+        <b class="num" id="calVal" style="flex:0 0 70px;text-align:right">0 dB</b>
+      </div>
+      <button class="link" id="btnReset">รีเซ็ตสถิติการวัด</button>
+    </details>
+  </section>
+
+  <!-- ===== TAB: SPOTS ===== -->
+  <section class="tab" id="tab-spots">
+    <div class="card">
+      <h2>สำรวจจุดในพื้นที่</h2>
+      <p class="small muted" style="margin:0 0 10px">เดินไปยืนตามจุดต่าง ๆ ตั้งชื่อ แล้วแตะวัด 10 วินาที แอพจะจัดอันดับจุดที่เงียบที่สุดให้ และบันทึกตำแหน่ง GPS ของจุดนั้นไว้แสดงบนแผนที่ด้วย</p>
+      <input type="text" id="spotName" placeholder="ชื่อจุด เช่น โต๊ะริมหน้าต่าง, ห้องประชุม 2" maxlength="40" aria-label="ชื่อจุด">
+      <div style="height:10px"></div>
+      <button class="btn" id="btnSpot">วัดจุดนี้ 10 วินาที</button>
+      <div class="prog" id="prog"><i></i></div>
+    </div>
+
+    <div class="card" id="bestCard" style="display:none;border-left:5px solid var(--z1)">
+      <h2>จุดที่เงียบที่สุดตอนนี้</h2>
+      <div id="bestBody"></div>
+    </div>
+
+    <div class="card">
+      <h2>อันดับจุดที่บันทึกไว้</h2>
+      <div id="spotList"><p class="muted small" style="margin:0">ยังไม่มีจุดที่บันทึก เริ่มจากจุดที่คุณอยู่ตอนนี้ได้เลย</p></div>
+      <div style="text-align:right"><button class="link" id="btnClear" style="display:none">ลบจุดทั้งหมด</button></div>
+    </div>
+  </section>
+
+  <!-- ===== TAB: MAP ===== -->
+  <section class="tab" id="tab-map">
+    <div class="card">
+      <h2>แผนที่ความดังจาก GPS</h2>
+      <p class="small muted" style="margin:0 0 10px">เปิด GPS แล้ววัดจุด หรือเปิด “เดินสำรวจ” แล้วเดินช้า ๆ แอพจะบันทึกเสียงทุก 3 วินาทีพร้อมตำแหน่ง แล้วระบายสีบนแผนที่ว่าตรงไหนเบา ตรงไหนดัง</p>
+      <div class="row">
+        <button class="btn ghost" id="btnGps">เปิด GPS</button>
+        <button class="btn ghost" id="btnWalk">เดินสำรวจ: ปิด</button>
+      </div>
+      <div id="gpsInfo" class="small muted" style="margin-top:10px">GPS ปิดอยู่</div>
+    </div>
+
+    <div class="card">
+      <div class="mapbox"><canvas id="map" aria-label="แผนที่ระดับเสียงตามตำแหน่ง"></canvas></div>
+      <div class="legend">
+        <span><i style="background:var(--z1)"></i>เงียบ &lt;55</span>
+        <span><i style="background:var(--z2)"></i>ปกติ 55–70</span>
+        <span><i style="background:var(--z3)"></i>ดัง 70–85</span>
+        <span><i style="background:var(--z5)"></i>อันตราย 85+</span>
+      </div>
+      <div id="pick" class="small" style="margin-top:10px">แตะจุดบนแผนที่เพื่อดูรายละเอียด</div>
+      <p class="small muted" style="margin:10px 0 0">แผนที่เป็นแผนผังตามพิกัด หันทิศเหนือขึ้นด้านบน (ไม่มีภาพถนนพื้นหลัง) สัญญาณ GPS ในอาคารมักคลาดเคลื่อน 10–50 เมตร จุดที่อยู่ใกล้กันมากอาจซ้อนกัน</p>
+    </div>
+
+    <div class="card" id="goQuiet" style="display:none;border-left:5px solid var(--z1)"></div>
+
+    <div style="text-align:right"><button class="link" id="btnClearMap">ลบข้อมูลที่เดินสำรวจ</button></div>
+  </section>
+
+  <!-- ===== TAB: GUIDE ===== -->
+  <section class="tab" id="tab-guide">
+    <div class="card">
+      <h2>ระดับเสียงที่พบบ่อย</h2>
+      <table>
+        <tr><th>dB(A)</th><th>ตัวอย่าง</th></tr>
+        <tr><td>30</td><td>ห้องนอนเงียบ ห้องสมุด</td></tr>
+        <tr><td>50–60</td><td>สำนักงานทั่วไป พูดคุยปกติ</td></tr>
+        <tr><td>70–80</td><td>ถนนในเมือง ห้องอาหารคนแน่น เครื่องดูดฝุ่น</td></tr>
+        <tr><td>85–95</td><td>โรงงาน เครื่องตัดหญ้า มอเตอร์ไซค์ใกล้ ๆ</td></tr>
+        <tr><td>100–110</td><td>คอนเสิร์ต ผับ เครื่องเจียร</td></tr>
+        <tr><td>120+</td><td>เครื่องยนต์เจ็ต เสียงปืน เจ็บหู</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>เวลาสัมผัสเสียงที่ปลอดภัย</h2>
+      <p class="small muted" style="margin-top:0">เกณฑ์ NIOSH: 85 dB(A) นาน 8 ชม. และทุก ๆ ที่เพิ่มขึ้น 3 dB เวลาที่รับได้จะลดลงครึ่งหนึ่ง</p>
+      <table>
+        <tr><th>ระดับเสียง</th><th>เวลาสูงสุดต่อวัน</th></tr>
+        <tr><td>85 dB(A)</td><td>8 ชั่วโมง</td></tr>
+        <tr><td>88 dB(A)</td><td>4 ชั่วโมง</td></tr>
+        <tr><td>91 dB(A)</td><td>2 ชั่วโมง</td></tr>
+        <tr><td>94 dB(A)</td><td>1 ชั่วโมง</td></tr>
+        <tr><td>100 dB(A)</td><td>15 นาที</td></tr>
+        <tr><td>109 dB(A)</td><td>1 นาที</td></tr>
+      </table>
+      <p class="small muted" style="margin-bottom:0">กฎกระทรวงไทย พ.ศ. 2559 กำหนดเพดานเฉลี่ย 91 dB(A) ต่อ 8 ชม. และต้องมีโปรแกรมอนุรักษ์การได้ยินเมื่อถึง 85 dB(A) โปรดตรวจสอบฉบับล่าสุดก่อนนำไปใช้อ้างอิง</p>
+    </div>
+
+    <div class="card">
+      <h2>ลดเสียงให้ถึงตัวน้อยลง</h2>
+      <ul>
+        <li><b>ระยะห่าง:</b> ห่างจากแหล่งเสียงเป็น 2 เท่า เสียงลดลงประมาณ 6 dB</li>
+        <li><b>สิ่งกั้น:</b> ผนัง ฉากกั้น หรือตู้ระหว่างตัวคุณกับเครื่องจักรช่วยลดเสียงตรง</li>
+        <li><b>หันหลบ:</b> อย่าให้ช่องเสียงออกของเครื่องหันเข้าหาคนทำงาน</li>
+        <li><b>ลดเวลา:</b> สลับงานหรือพักในที่เงียบเป็นระยะ</li>
+        <li><b>อุปกรณ์ป้องกัน:</b> ที่อุดหูหรือที่ครอบหูที่มีค่า NRR เหมาะกับระดับเสียง เลือกให้พอดีและสวมให้ถูกวิธี</li>
+        <li><b>ตรวจการได้ยิน:</b> ผู้ทำงานในที่เสียงดังควรตรวจการได้ยินอย่างน้อยปีละครั้ง</li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-left:5px solid var(--z3)">
+      <h2>ข้อจำกัดของแอพนี้</h2>
+      <p class="small" style="margin:0">ไมโครโฟนมือถือไม่ใช่เครื่องวัดเสียงมาตรฐาน (IEC 61672) ค่าที่ได้เป็นการประมาณ คลาดเคลื่อนได้ราว ±3–6 dB และวัดเสียงดังมากหรือเสียงกระแทกได้ไม่แม่นยำ ใช้เพื่อคัดกรองและเปรียบเทียบจุดต่าง ๆ ส่วนการประเมินตามกฎหมาย ควรใช้เครื่องวัดเสียงหรือ noise dosimeter ที่สอบเทียบแล้ว โดยผู้เชี่ยวชาญ</p>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<nav class="nav" aria-label="เมนูหลัก">
+  <button data-tab="meter" class="on">
+    <svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></svg>วัดเสียง
+  </button>
+  <button data-tab="spots">
+    <svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>จุดเงียบ
+  </button>
+  <button data-tab="map">
+    <svg viewBox="0 0 24 24"><path d="M9 4L3 6.5v13L9 17l6 3 6-2.5v-13L15 7 9 4z"/><path d="M9 4v13M15 7v13"/></svg>แผนที่
+  </button>
+  <button data-tab="guide">
+    <svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4z"/><path d="M9 9h6M9 13h6"/></svg>ความรู้
+  </button>
+</nav>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){return document.getElementById(id)};
+  var ARC_LEN = 314.16, DB_MIN = 30, DB_MAX = 120, BASE_OFFSET = 100;
+
+  /* ---------- storage (guarded) ---------- */
+  function sget(k, def){ try{ var v = localStorage.getItem(k); return v===null?def:JSON.parse(v);}catch(e){return def;} }
+  function sset(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+  /* ---------- state ---------- */
+  var st = {
+    running:false, demo:false, ctx:null, analyser:null, stream:null, src:null,
+    buf:null, fbuf:null, wA:null, raf:0, last:0,
+    Pf:0, sumP:0, t:0, lmax:null, lmin:null, dose:0, level:0,
+    hist:[], lastHist:0, measuring:null, wake:null, lastUI:0
+  };
+  var offset = sget("ss_offset", 0);
+  var spots = sget("ss_spots", []);
+  var samples = sget("ss_samples", []);
+  var geo = {watch:null, pos:null};
+  var walk = false, walkAcc = {sumP:0,t:0}, picked = null, mapHits = [];
+
+  /* ---------- helpers ---------- */
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+  function zoneOf(L){
+    if(L<55) return {c:"var(--z1)", n:"เงียบ", s:"เหมาะกับงานที่ต้องใช้สมาธิ อ่านหนังสือ"};
+    if(L<70) return {c:"var(--z2)", n:"ปกติ", s:"ระดับเสียงสนทนา สำนักงานทั่วไป"};
+    if(L<80) return {c:"var(--z3)", n:"ดัง", s:"เริ่มรบกวนการสนทนา อยู่นาน ๆ จะล้า"};
+    if(L<85) return {c:"var(--z4)", n:"ดังมาก", s:"ใกล้ระดับที่ต้องป้องกันการได้ยิน"};
+    if(L<100) return {c:"var(--z4)", n:"อันตรายหากอยู่นาน", s:"ควรสวมอุปกรณ์ป้องกันและจำกัดเวลา"};
+    return {c:"var(--z5)", n:"อันตรายสูง", s:"ควรออกจากบริเวณนี้หรือป้องกันหูทันที"};
+  }
+  function fmtTime(sec){
+    if(sec>=8*3600) return "มากกว่า 8 ชั่วโมง";
+    if(sec>=3600){ var h=Math.floor(sec/3600), m=Math.round((sec%3600)/60); return h+" ชม. "+(m?m+" นาที":""); }
+    if(sec>=60) return Math.round(sec/60)+" นาที";
+    return Math.max(1,Math.round(sec))+" วินาที";
+  }
+  function allowedSec(L){ return 8*3600/Math.pow(2,(L-85)/3); }
+  function toast(msg){
+    var t=$("toast"); t.textContent=msg; t.style.display="block";
+    clearTimeout(toast._t); toast._t=setTimeout(function(){t.style.display="none"},2600);
+  }
+  function setStatus(on, txt){
+    var p=$("status"); p.classList.toggle("live", on); $("statusTxt").textContent=txt;
+  }
+  function showErr(msg){ var e=$("err"); e.textContent=msg; e.style.display=msg?"block":"none"; }
+
+  /* ---------- A-weighting (power) per FFT bin ---------- */
+  function buildWeights(sr, n){
+    var w = new Float32Array(n), bin = sr/(2*n);
+    for(var k=0;k<n;k++){
+      var f = Math.max(k*bin, 1), f2=f*f;
+      var ra = (148693636*f2*f2) / ((f2+424.36)*Math.sqrt((f2+11599.29)*(f2+544496.41))*(f2+148693636));
+      var a = ra*1.2589; // +2.00 dB
+      w[k] = a*a;
+    }
+    return w;
+  }
+
+  /* ---------- audio start / stop ---------- */
+  async function start(demo){
+    if(st.running) return true;
+    showErr("");
+    if(!demo){
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        showErr("เบราว์เซอร์นี้ไม่รองรับการเข้าถึงไมโครโฟน ลองเปิดด้วย Safari หรือ Chrome หรือใช้โหมดจำลองเสียงเพื่อดูการทำงาน");
+        return false;
+      }
+      try{
+        st.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+        var AC = window.AudioContext||window.webkitAudioContext;
+        st.ctx = new AC();
+        if(st.ctx.state==="suspended") await st.ctx.resume();
+        st.src = st.ctx.createMediaStreamSource(st.stream);
+        st.analyser = st.ctx.createAnalyser();
+        st.analyser.fftSize = 4096; st.analyser.smoothingTimeConstant = 0;
+        st.src.connect(st.analyser);
+        st.buf = new Float32Array(st.analyser.fftSize);
+        st.fbuf = new Float32Array(st.analyser.frequencyBinCount);
+        st.wA = buildWeights(st.ctx.sampleRate, st.analyser.frequencyBinCount);
+      }catch(e){
+        cleanupAudio();
+        showErr("เข้าถึงไมโครโฟนไม่ได้ กรุณาอนุญาตการใช้ไมค์ในเบราว์เซอร์ หากเปิดในหน้าต่างที่ฝังอยู่ ให้ลองเปิดลิงก์ในแท็บใหม่ หรือใช้โหมดจำลองเสียงเพื่อดูการทำงาน");
+        return false;
+      }
+    }
+    st.demo = !!demo; st.running = true;
+    st.Pf = 0; st.last = 0;
+    try{ if(navigator.wakeLock) navigator.wakeLock.request("screen").then(function(l){st.wake=l}).catch(function(){}); }catch(e){}
+    setStatus(true, demo?"โหมดจำลอง":"กำลังวัด");
+    $("btnStart").textContent="หยุดวัด"; $("btnStart").classList.add("stop");
+    st.raf = requestAnimationFrame(frame);
+    return true;
+  }
+  function cleanupAudio(){
+    try{ if(st.stream) st.stream.getTracks().forEach(function(t){t.stop()}); }catch(e){}
+    try{ if(st.ctx) st.ctx.close(); }catch(e){}
+    st.stream=null; st.ctx=null; st.analyser=null; st.src=null;
+  }
+  function stop(){
+    st.running=false; cancelAnimationFrame(st.raf);
+    cleanupAudio();
+    try{ if(st.wake){st.wake.release(); st.wake=null;} }catch(e){}
+    if(st.measuring){ st.measuring=null; endMeasureUI(); }
+    walk=false; setWalkBtn(); setStatus(false,"หยุดอยู่");
+    $("btnStart").textContent="เริ่มวัดต่อ"; $("btnStart").classList.remove("stop");
+  }
+
+  /* ---------- demo signal ---------- */
+  function demoLevel(ts){
+    var s = ts/1000;
+    var base = 58 + 14*Math.sin(s/6) + 6*Math.sin(s/1.7);
+    var burst = (Math.sin(s/9) > 0.82) ? 18*Math.abs(Math.sin(s*3)) : 0;
+    return base + burst + (Math.random()-0.5)*3;
+  }
+
+  /* ---------- main loop ---------- */
+  function frame(ts){
+    if(!st.running) return;
+    var dt = st.last ? Math.min(0.1,(ts-st.last)/1000) : 0.016; st.last = ts;
+    var Lraw;
+    if(st.demo){ Lraw = demoLevel(ts) + offset; }
+    else{
+      st.analyser.getFloatTimeDomainData(st.buf);
+      var s=0, i, n=st.buf.length;
+      for(i=0;i<n;i++) s += st.buf[i]*st.buf[i];
+      var ms = s/n;
+      st.analyser.getFloatFrequencyData(st.fbuf);
+      var num=0, den=0, fb=st.fbuf, w=st.wA;
+      for(i=1;i<fb.length;i++){ var p=Math.pow(10, fb[i]/10); num+=p*w[i]; den+=p; }
+      var corr = (den>0 && num>0) ? 10*Math.log10(num/den) : -30;
+      Lraw = 10*Math.log10(ms+1e-12) + corr + BASE_OFFSET + offset;
+    }
+    var Pl = Math.pow(10, Lraw/10);
+    if(!st.Pf) st.Pf = Pl;
+    st.Pf += (Pl - st.Pf)*(1-Math.exp(-dt/0.125)); // Fast time weighting
+    var L = clamp(10*Math.log10(st.Pf), DB_MIN, 140);
+    st.level = L;
+
+    st.t += dt; st.sumP += Math.pow(10,L/10)*dt;
+    if(st.t>0.6){ st.lmax = st.lmax===null?L:Math.max(st.lmax,L); st.lmin = st.lmin===null?L:Math.min(st.lmin,L); }
+    if(L>=80) st.dose += dt/allowedSec(L);
+
+    if(walk){
+      var gp = freshPos();
+      if(gp && gp.acc<=60){
+        walkAcc.sumP += Math.pow(10,L/10)*dt; walkAcc.t += dt;
+        if(walkAcc.t>=3){ addSample(gp, 10*Math.log10(walkAcc.sumP/walkAcc.t)); walkAcc={sumP:0,t:0}; }
+      } else walkAcc={sumP:0,t:0};
+    }
+
+    if(st.measuring){
+      var m=st.measuring; m.sumP += Math.pow(10,L/10)*dt; m.t += dt; m.max=Math.max(m.max,L);
+      $("prog").firstElementChild.style.width = clamp(m.t/m.dur*100,0,100)+"%";
+      if(m.t>=m.dur) finishMeasure();
+    }
+
+    if(ts-st.lastHist>250){
+      st.lastHist=ts; st.hist.push(L); if(st.hist.length>240) st.hist.shift();
+    }
+    if(ts-st.lastUI>90){ st.lastUI=ts; render(); }
+    st.raf = requestAnimationFrame(frame);
+  }
+
+  /* ---------- render ---------- */
+  function render(){
+    var L = st.level, z = zoneOf(L);
+    $("db").textContent = L.toFixed(0)==="30" ? "<30" : L.toFixed(0);
+    var frac = clamp((L-DB_MIN)/(DB_MAX-DB_MIN),0,1);
+    var arc=$("arc"); arc.setAttribute("stroke-dasharray", (frac*ARC_LEN).toFixed(1)+" "+ARC_LEN);
+    arc.setAttribute("stroke", z.c);
+    $("zone").textContent = z.n; $("zone").style.color = z.c;
+    $("zoneSub").textContent = z.s;
+
+    var leq = st.t>0 ? 10*Math.log10(st.sumP/st.t) : null;
+    $("sLeq").textContent = leq===null?"--":leq.toFixed(0);
+    $("sMax").textContent = st.lmax===null?"--":st.lmax.toFixed(0);
+    $("sMin").textContent = st.lmin===null?"--":st.lmin.toFixed(0);
+    var d = st.dose*100; $("sDose").textContent = (d<10?d.toFixed(1):d.toFixed(0))+"%";
+
+    $("advice").style.borderLeftColor = z.c;
+    renderAdvice(L, z);
+    drawChart();
+  }
+  function renderAdvice(L, z){
+    var t,b;
+    if(L<55){ t="เงียบสบาย"; b="ระดับนี้ปลอดภัยต่อการได้ยิน และเหมาะกับการอ่าน เขียน หรือประชุมสองคน"; }
+    else if(L<70){ t="ระดับปกติ"; b="ปลอดภัยต่อการได้ยิน สนทนาได้โดยไม่ต้องเพิ่มเสียง"; }
+    else if(L<80){ t="เริ่มดัง"; b="ปลอดภัยตามเกณฑ์ แต่คุยต้องเพิ่มเสียงและล้าเร็วขึ้น ถ้าอยู่ทั้งวันควรหาจุดที่เงียบกว่า"; }
+    else if(L<85){ t="ใกล้ระดับปฏิบัติการ"; b="อีกไม่กี่ dB จะถึง 85 dB(A) ซึ่งเป็นระดับที่ควรเริ่มมาตรการป้องกัน เช่น ลดเวลา เพิ่มระยะห่าง หรือเตรียมที่อุดหู"; }
+    else if(L<100){ t="ควรป้องกันการได้ยิน"; b="สวมที่อุดหูหรือที่ครอบหู จำกัดเวลา และย้ายออกห่างจากแหล่งเสียงเมื่อทำได้"; }
+    else{ t="อันตราย"; b="ออกจากบริเวณนี้ หากต้องอยู่ ให้สวมที่อุดหูร่วมกับที่ครอบหู และเหลือเวลาอยู่ได้สั้นมาก"; }
+    $("advTitle").textContent=t; $("advBody").textContent=b; $("advBody").className="";
+    var sec=allowedSec(L);
+    $("advSafe").innerHTML = L>=80
+      ? "<span class=\"tag\">อยู่ได้ไม่เกิน "+fmtTime(sec)+" ต่อวัน (เกณฑ์ NIOSH)</span>"
+      : "<span class=\"tag\">อยู่ได้เกิน 8 ชั่วโมงตามเกณฑ์ NIOSH</span>";
+    // quieter spot suggestion
+    var q = quieterSpot(L);
+    if(q){
+      $("advQuiet").innerHTML = "ไปที่ <b>"+esc(q.name)+"</b> ("+q.leq.toFixed(0)+" dB(A)) "+(q.d!==undefined?"อยู่ห่างไปทาง"+compass(q.brg)+" ประมาณ "+Math.round(q.d)+" ม. ":"")+"จะเบากว่าที่นี่ประมาณ "+Math.round(L-q.leq)+" dB";
+    } else if(L>=70){
+      $("advQuiet").innerHTML = spots.length ? "ยังไม่พบจุดที่บันทึกไว้ซึ่งเงียบกว่าที่นี่ ลองสำรวจจุดอื่นเพิ่มในแท็บ “จุดเงียบ”" : "ยังไม่มีข้อมูลจุดเงียบ ไปที่แท็บ “จุดเงียบ” เพื่อสำรวจพื้นที่รอบตัว";
+    } else $("advQuiet").textContent="";
+  }
+  function quieterSpot(L){
+    var here = freshPos();
+    if(here){
+      var r = rankNear(here, L-3);
+      if(r) return {name: r.p.kind==="spot"?r.p.name:"บริเวณที่เดินสำรวจไว้", leq:r.p.leq, d:r.d, brg:bearing(here,r.p)};
+    }
+    var c = spots.filter(function(s){return s.leq < L-3}).sort(function(a,b){return a.leq-b.leq});
+    return c[0]||null;
+  }
+  function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]}); }
+
+  /* ---------- chart ---------- */
+  function drawChart(){
+    var cv=$("chart"), dpr=window.devicePixelRatio||1;
+    var w=cv.clientWidth, h=cv.clientHeight; if(!w) return;
+    if(cv.width!==Math.round(w*dpr)){ cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); }
+    var g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,w,h);
+    var cs=getComputedStyle(document.documentElement);
+    var line=cs.getPropertyValue("--line").trim(), ink2=cs.getPropertyValue("--ink-2").trim();
+    var padL=26, padB=4, plotW=w-padL, plotH=h-padB;
+    function y(v){ return plotH - (clamp(v,DB_MIN,DB_MAX)-DB_MIN)/(DB_MAX-DB_MIN)*plotH; }
+    g.font="10px 'Noto Sans Thai',sans-serif"; g.textBaseline="middle";
+    [[55,"z1"],[70,"z2"],[85,"z4"]].forEach(function(p){
+      g.strokeStyle=line; g.setLineDash([4,4]); g.lineWidth=1;
+      g.beginPath(); g.moveTo(padL,y(p[0])); g.lineTo(w,y(p[0])); g.stroke();
+      g.fillStyle=ink2; g.fillText(p[0],0,y(p[0]));
+    });
+    g.setLineDash([]);
+    var data=st.hist; if(data.length<2) return;
+    var maxPts=240, step=plotW/(maxPts-1), x0=padL+plotW-(data.length-1)*step;
+    var zc=zoneOf(data[data.length-1]).c;
+    var color = cs.getPropertyValue(zc.replace("var(","").replace(")","")).trim();
+    g.lineWidth=2.2; g.lineJoin="round"; g.strokeStyle=color;
+    g.beginPath();
+    data.forEach(function(v,i){ var x=x0+i*step; if(i===0) g.moveTo(x,y(v)); else g.lineTo(x,y(v)); });
+    g.stroke();
+    g.lineTo(x0+(data.length-1)*step, plotH); g.lineTo(x0, plotH); g.closePath();
+    g.globalAlpha=0.14; g.fillStyle=color; g.fill(); g.globalAlpha=1;
+  }
+
+  /* ---------- spots ---------- */
+  function renderSpots(){
+    var list=$("spotList");
+    if(!spots.length){
+      list.innerHTML="<p class=\"muted small\" style=\"margin:0\">ยังไม่มีจุดที่บันทึก เริ่มจากจุดที่คุณอยู่ตอนนี้ได้เลย</p>";
+      $("bestCard").style.display="none"; $("btnClear").style.display="none"; return;
+    }
+    var sorted=spots.slice().sort(function(a,b){return a.leq-b.leq});
+    var html="";
+    sorted.forEach(function(s,i){
+      var z=zoneOf(s.leq), pct=clamp((s.leq-DB_MIN)/(DB_MAX-DB_MIN)*100,3,100);
+      html += "<div class=\"spot\"><div class=\"nm\">"+esc(s.name)+(i===0&&sorted.length>1?"<span class=\"best\">เงียบสุด</span>":"")+"</div>"
+        +"<div class=\"lv\" style=\"color:"+z.c+"\">"+s.leq.toFixed(0)+"</div>"
+        +"<div class=\"bar\"><i style=\"width:"+pct+"%;background:"+z.c+"\"></i></div>"
+        +"<div class=\"meta\"><span>"+z.n+" · สูงสุด "+s.max.toFixed(0)+" dB · "+esc(s.time)+(s.lat!==undefined?" · มีพิกัด":"")+"</span><button class=\"del\" data-del=\""+s.id+"\">ลบ</button></div></div>";
+    });
+    list.innerHTML=html;
+    $("btnClear").style.display="inline-block";
+    var b=sorted[0], z=zoneOf(b.leq), use;
+    if(b.leq<45) use="เหมาะกับงานใช้สมาธิสูง อ่านหนังสือ หรือพักผ่อน";
+    else if(b.leq<55) use="เหมาะกับงานเอกสาร ประชุมกลุ่มเล็ก";
+    else if(b.leq<65) use="เหมาะกับการพูดคุยปกติ งานทั่วไป";
+    else if(b.leq<80) use="เสียงค่อนข้างดัง ควรหาจุดอื่นเพิ่มถ้าต้องอยู่นาน";
+    else use="ทุกจุดที่สำรวจยังดังมาก ควรลดเสียงที่ต้นทางหรือสวมอุปกรณ์ป้องกัน";
+    var loudest=sorted[sorted.length-1], diff=loudest.leq-b.leq;
+    $("bestBody").innerHTML="<div class=\"num\" style=\"font-size:20px;font-weight:700\">"+esc(b.name)+" · <span style=\"color:"+z.c+"\">"+b.leq.toFixed(0)+" dB(A)</span></div>"
+      +"<p style=\"margin:6px 0 0\">"+use+"</p>"
+      +(sorted.length>1?"<p class=\"small muted\" style=\"margin:6px 0 0\">เงียบกว่าจุดที่ดังที่สุดประมาณ "+diff.toFixed(0)+" dB ("+(diff>=10?"คนรู้สึกว่าเบาลงราวครึ่งหนึ่งหรือมากกว่า":diff>=3?"ได้ยินความต่างชัดเจน":"ต่างกันเล็กน้อย")+")</p>":"");
+    $("bestCard").style.display="block";
+  }
+  function endMeasureUI(){ $("prog").style.display="none"; $("prog").firstElementChild.style.width="0"; $("btnSpot").disabled=false; $("btnSpot").textContent="วัดจุดนี้ 10 วินาที"; }
+  async function beginMeasure(){
+    if(st.measuring) return;
+    var name=$("spotName").value.trim()||("จุดที่ "+(spots.length+1));
+    startGps();
+    if(!st.running){ var ok=await start(false); if(!ok){ return; } }
+    st.measuring={name:name,sumP:0,t:0,dur:10,max:0};
+    $("prog").style.display="block"; $("btnSpot").disabled=true; $("btnSpot").textContent="กำลังวัด… อยู่นิ่ง ๆ";
+  }
+  function finishMeasure(){
+    var m=st.measuring; st.measuring=null; endMeasureUI();
+    var leq=10*Math.log10(m.sumP/m.t);
+    var d=new Date();
+    var pos = freshPos();
+    var rec = {id:Date.now().toString(36),name:m.name,leq:leq,max:m.max,time:timeStr()};
+    if(pos){ rec.lat=pos.lat; rec.lon=pos.lon; rec.acc=pos.acc; }
+    spots.push(rec);
+    sset("ss_spots",spots); $("spotName").value=""; renderSpots();
+    toast("บันทึก “"+m.name+"” = "+leq.toFixed(0)+" dB(A)"+(pos?" พร้อมตำแหน่ง":" (ยังไม่มีตำแหน่ง GPS)")); updateMap();
+  }
+
+  /* ---------- GPS & map ---------- */
+  function timeStr(){ var d=new Date(); return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2)+" น."; }
+  function freshPos(){ return (geo.pos && Date.now()-geo.pos.ts<30000) ? geo.pos : null; }
+  function gpsMsg(extra){
+    var el=$("gpsInfo"); $("btnGps").textContent = geo.watch!==null ? "ปิด GPS" : "เปิด GPS";
+    $("btnGps").classList.toggle("on", geo.watch!==null);
+    if(extra){ el.textContent=extra; return; }
+    var p=freshPos();
+    if(!p){ el.textContent = geo.watch!==null ? "กำลังค้นหาตำแหน่ง…" : "GPS ปิดอยู่"; return; }
+    el.textContent = "ได้ตำแหน่งแล้ว · แม่นยำ ±"+Math.round(p.acc)+" ม."+(p.acc>30?" (สัญญาณอ่อน ลองออกที่โล่งหรือรอสักครู่)":"");
+  }
+  function startGps(){
+    if(geo.watch!==null) return;
+    if(!navigator.geolocation){ gpsMsg("เบราว์เซอร์นี้ไม่รองรับ GPS"); return; }
+    geo.watch = navigator.geolocation.watchPosition(function(p){
+      geo.pos={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy||0,ts:Date.now()};
+      gpsMsg(); updateMap();
+    }, function(e){
+      var m = e.code===1 ? "ไม่ได้รับอนุญาตให้ใช้ตำแหน่ง กรุณาอนุญาตในเบราว์เซอร์ หรือเปิดลิงก์ในแท็บใหม่" : e.code===3 ? "หาตำแหน่งไม่ทัน ลองออกที่โล่ง" : "หาตำแหน่งไม่ได้ในตอนนี้";
+      if(e.code===1){ try{navigator.geolocation.clearWatch(geo.watch);}catch(x){} geo.watch=null; }
+      gpsMsg(m);
+    }, {enableHighAccuracy:true,maximumAge:2000,timeout:20000});
+    gpsMsg();
+  }
+  function stopGps(){
+    try{ if(geo.watch!==null) navigator.geolocation.clearWatch(geo.watch); }catch(e){}
+    geo.watch=null; geo.pos=null; walk=false; setWalkBtn(); gpsMsg(); updateMap();
+  }
+  function setWalkBtn(){ var b=$("btnWalk"); if(!b) return; b.textContent = walk?"เดินสำรวจ: เปิด":"เดินสำรวจ: ปิด"; b.classList.toggle("on", walk); }
+
+  function dist(a,b){
+    var R=6371000, r=Math.PI/180, dLa=(b.lat-a.lat)*r, dLo=(b.lon-a.lon)*r;
+    var h=Math.pow(Math.sin(dLa/2),2)+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.pow(Math.sin(dLo/2),2);
+    return 2*R*Math.asin(Math.sqrt(h));
+  }
+  function bearing(a,b){
+    var r=Math.PI/180, y=Math.sin((b.lon-a.lon)*r)*Math.cos(b.lat*r);
+    var x=Math.cos(a.lat*r)*Math.sin(b.lat*r)-Math.sin(a.lat*r)*Math.cos(b.lat*r)*Math.cos((b.lon-a.lon)*r);
+    return (Math.atan2(y,x)/r+360)%360;
+  }
+  function compass(deg){
+    var n=["เหนือ","ตะวันออกเฉียงเหนือ","ตะวันออก","ตะวันออกเฉียงใต้","ใต้","ตะวันตกเฉียงใต้","ตะวันตก","ตะวันตกเฉียงเหนือ"];
+    return n[Math.round(deg/45)%8];
+  }
+  function geoPoints(){
+    var out=[];
+    spots.forEach(function(s){ if(s.lat!==undefined) out.push({lat:s.lat,lon:s.lon,leq:s.leq,name:s.name,time:s.time,kind:"spot"}); });
+    samples.forEach(function(s){ out.push({lat:s.lat,lon:s.lon,leq:s.leq,name:"บริเวณที่เดินสำรวจ",time:s.time,kind:"walk"}); });
+    return out;
+  }
+  // เลือกจุดที่เบาและไม่ไกลเกินไป (ทุก 25 เมตร ถือเป็นเสียเทียบเท่า 1 dB)
+  function rankNear(here, thr){
+    var best=null;
+    geoPoints().forEach(function(p){
+      var d=dist(here,p); if(d<8) return;
+      if(thr!==null && p.leq>=thr) return;
+      var sc=p.leq+d/25; if(!best||sc<best.sc) best={p:p,d:d,sc:sc};
+    });
+    return best;
+  }
+  function addSample(gp, leq){
+    samples.push({lat:gp.lat,lon:gp.lon,leq:leq,time:timeStr()});
+    if(samples.length>600) samples.shift();
+    sset("ss_samples",samples); updateMap();
+  }
+
+  function cssColor(v){ return getComputedStyle(document.documentElement).getPropertyValue(v.replace("var(","").replace(")","")).trim(); }
+  function updateMap(){
+    var t=$("tab-map"); if(!t || !t.classList.contains("on")) return;
+    drawMap(); renderMapPanel(); showPick();
+  }
+  function showPick(){
+    var el=$("pick");
+    if(!picked){ el.textContent="แตะจุดบนแผนที่เพื่อดูรายละเอียด"; return; }
+    var z=zoneOf(picked.leq), here=freshPos();
+    el.innerHTML="<b>"+esc(picked.name)+"</b> · <b style=\"color:"+z.c+"\">"+picked.leq.toFixed(0)+" dB(A)</b> · "+z.n+(picked.time?" · "+esc(picked.time):"")+(here?" · ห่างจากคุณ "+Math.round(dist(here,picked))+" ม.":"");
+  }
+  function renderMapPanel(){
+    var box=$("goQuiet"), here=freshPos(), pts=geoPoints();
+    if(!here || !pts.length){ box.style.display="none"; return; }
+    var q=rankNear(here,null), h="";
+    if(q){
+      var z=zoneOf(q.p.leq), nm=q.p.kind==="spot"?q.p.name:"บริเวณที่เดินสำรวจไว้";
+      h+="<h2>จุดเงียบใกล้คุณ</h2><div><b>"+esc(nm)+"</b> · <b style=\"color:"+z.c+"\">"+q.p.leq.toFixed(0)+" dB(A)</b><br>อยู่ห่างไปทาง"+compass(bearing(here,q.p))+" ประมาณ "+Math.round(q.d)+" เมตร</div>";
+    }
+    var loud=null;
+    pts.forEach(function(p){ var d=dist(here,p); if(d<=150 && (!loud||p.leq>loud.p.leq)) loud={p:p,d:d}; });
+    if(loud && loud.p.leq>=70){
+      var lz=zoneOf(loud.p.leq);
+      h+="<p style=\"margin:10px 0 0\">ควรระวัง: ในรัศมี 150 ม. มีบริเวณที่ดังถึง <b style=\"color:"+lz.c+"\">"+loud.p.leq.toFixed(0)+" dB(A)</b> ห่างไปทาง"+compass(bearing(here,loud.p))+" ประมาณ "+Math.round(loud.d)+" เมตร</p>";
+    }
+    if(!h){ box.style.display="none"; return; }
+    box.innerHTML=h; box.style.display="block";
+  }
+  function drawMap(){
+    var cv=$("map"), dpr=window.devicePixelRatio||1, w=cv.clientWidth, h=cv.clientHeight; if(!w) return;
+    if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){ cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); }
+    var g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,w,h);
+    var cs=getComputedStyle(document.documentElement);
+    var ink=cs.getPropertyValue("--ink").trim(), ink2=cs.getPropertyValue("--ink-2").trim(), line=cs.getPropertyValue("--line").trim(), surf=cs.getPropertyValue("--surface").trim(), accent=cs.getPropertyValue("--accent").trim();
+    var pts=geoPoints(), here=freshPos(); mapHits=[];
+    g.textAlign="center"; g.textBaseline="middle"; g.font="13px 'Noto Sans Thai',sans-serif";
+    var all=pts.slice(); if(here) all.push(here);
+    if(!all.length){
+      g.fillStyle=ink2; g.fillText("ยังไม่มีข้อมูลตำแหน่ง",w/2,h/2-12); g.fillText("เปิด GPS แล้ววัดจุด หรือเปิด “เดินสำรวจ”",w/2,h/2+12); return;
+    }
+    var lat0=0, lon0=0; all.forEach(function(p){lat0+=p.lat; lon0+=p.lon;}); lat0/=all.length; lon0/=all.length;
+    var kx=Math.cos(lat0*Math.PI/180)*111320, ky=110574;
+    function m(p){ return {x:(p.lon-lon0)*kx, y:(p.lat-lat0)*ky}; }
+    var minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+    all.forEach(function(p){ var q=m(p); minX=Math.min(minX,q.x); maxX=Math.max(maxX,q.x); minY=Math.min(minY,q.y); maxY=Math.max(maxY,q.y); });
+    var span=Math.max(maxX-minX,maxY-minY,40)*1.35, sc=Math.min(w,h)/span, cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+    function sx(q){return w/2+(q.x-cx)*sc} function sy(q){return h/2-(q.y-cy)*sc}
+
+    // grid
+    var steps=[5,10,20,50,100,200,500,1000,2000,5000], step=steps[steps.length-1];
+    for(var i=0;i<steps.length;i++){ if(steps[i]*sc>=55){ step=steps[i]; break; } }
+    g.strokeStyle=line; g.lineWidth=1; g.globalAlpha=.7;
+    var gx0=Math.floor((cx-w/2/sc)/step)*step, gy0=Math.floor((cy-h/2/sc)/step)*step;
+    for(var gx=gx0; gx<cx+w/2/sc; gx+=step){ var X=w/2+(gx-cx)*sc; g.beginPath(); g.moveTo(X,0); g.lineTo(X,h); g.stroke(); }
+    for(var gy=gy0; gy<cy+h/2/sc; gy+=step){ var Y=h/2-(gy-cy)*sc; g.beginPath(); g.moveTo(0,Y); g.lineTo(w,Y); g.stroke(); }
+    g.globalAlpha=1;
+
+    // heat
+    var rad=Math.max(22,Math.min(64,sc*14));
+    pts.forEach(function(p){
+      var q=m(p), x=sx(q), y=sy(q), col=cssColor(zoneOf(p.leq).c);
+      var gr=g.createRadialGradient(x,y,0,x,y,rad); gr.addColorStop(0,col+"99"); gr.addColorStop(1,col+"00");
+      g.fillStyle=gr; g.beginPath(); g.arc(x,y,rad,0,Math.PI*2); g.fill();
+    });
+    // walk dots
+    pts.forEach(function(p){
+      if(p.kind!=="walk") return;
+      var q=m(p), x=sx(q), y=sy(q), col=cssColor(zoneOf(p.leq).c);
+      g.fillStyle=col; g.beginPath(); g.arc(x,y,4,0,Math.PI*2); g.fill();
+      mapHits.push({x:x,y:y,p:p});
+    });
+    // spot markers
+    pts.forEach(function(p){
+      if(p.kind!=="spot") return;
+      var q=m(p), x=sx(q), y=sy(q), col=cssColor(zoneOf(p.leq).c);
+      g.fillStyle=col; g.strokeStyle=surf; g.lineWidth=2.5; g.beginPath(); g.arc(x,y,12,0,Math.PI*2); g.fill(); g.stroke();
+      g.fillStyle="#fff"; g.font="600 11px 'Chakra Petch',sans-serif"; g.fillText(p.leq.toFixed(0),x,y+0.5);
+      g.font="12px 'Noto Sans Thai',sans-serif"; g.lineWidth=3; g.strokeStyle=surf; g.strokeText(p.name,x,y+25); g.fillStyle=ink; g.fillText(p.name,x,y+25);
+      mapHits.push({x:x,y:y,p:p});
+    });
+    // picked ring
+    if(picked){
+      mapHits.forEach(function(mh){ if(mh.p.lat===picked.lat && mh.p.lon===picked.lon){ g.strokeStyle=ink; g.lineWidth=2; g.beginPath(); g.arc(mh.x,mh.y,17,0,Math.PI*2); g.stroke(); } });
+    }
+    // you
+    if(here){
+      var hq=m(here), hx=sx(hq), hy=sy(hq), ar=Math.max(10,Math.min(90,here.acc*sc));
+      g.fillStyle=accent+"26"; g.strokeStyle=accent+"66"; g.lineWidth=1; g.beginPath(); g.arc(hx,hy,ar,0,Math.PI*2); g.fill(); g.stroke();
+      g.fillStyle=accent; g.strokeStyle="#fff"; g.lineWidth=3; g.beginPath(); g.arc(hx,hy,7,0,Math.PI*2); g.fill(); g.stroke();
+      g.fillStyle=ink; g.lineWidth=3; g.strokeStyle=surf; g.font="600 12px 'Noto Sans Thai',sans-serif"; g.strokeText("คุณ",hx,hy-18); g.fillText("คุณ",hx,hy-18);
+    }
+    // scale bar + north
+    var bl=step*sc; g.strokeStyle=ink; g.lineWidth=2; g.beginPath(); g.moveTo(12,h-16); g.lineTo(12+bl,h-16); g.moveTo(12,h-21); g.lineTo(12,h-11); g.moveTo(12+bl,h-21); g.lineTo(12+bl,h-11); g.stroke();
+    g.textAlign="left"; g.font="11px 'Noto Sans Thai',sans-serif"; g.lineWidth=3; g.strokeStyle=surf;
+    var lbl = step>=1000 ? (step/1000)+" กม." : step+" ม."; g.strokeText(lbl,12,h-30); g.fillStyle=ink; g.fillText(lbl,12,h-30);
+    g.textAlign="center"; g.fillStyle=ink; g.font="600 12px 'Chakra Petch',sans-serif"; g.fillText("N",w-18,14);
+    g.beginPath(); g.moveTo(w-18,20); g.lineTo(w-23,32); g.lineTo(w-13,32); g.closePath(); g.fill();
+  }
+
+  /* ---------- events ---------- */
+  $("btnStart").addEventListener("click", function(){ st.running?stop():start(false); });
+  $("btnDemo").addEventListener("click", function(){ if(st.running) stop(); setTimeout(function(){start(true)},50); });
+  $("btnReset").addEventListener("click", function(){
+    st.sumP=0; st.t=0; st.lmax=null; st.lmin=null; st.dose=0; st.hist=[]; render(); toast("รีเซ็ตสถิติแล้ว");
+  });
+  $("cal").value=offset; $("calVal").textContent=(offset>0?"+":"")+offset+" dB";
+  $("cal").addEventListener("input", function(e){
+    offset=parseInt(e.target.value,10)||0; sset("ss_offset",offset);
+    $("calVal").textContent=(offset>0?"+":"")+offset+" dB";
+  });
+  $("btnSpot").addEventListener("click", beginMeasure);
+  $("btnGps").addEventListener("click", function(){ geo.watch!==null ? stopGps() : startGps(); });
+  $("btnWalk").addEventListener("click", async function(){
+    if(walk){ walk=false; setWalkBtn(); toast("หยุดเดินสำรวจแล้ว"); return; }
+    startGps();
+    if(!st.running){ var ok=await start(false); if(!ok) return; }
+    walk=true; walkAcc={sumP:0,t:0}; setWalkBtn();
+    toast("เดินช้า ๆ ถือมือถือให้ไมค์โล่ง แอพบันทึกทุก 3 วินาที");
+  });
+  $("btnClearMap").addEventListener("click", function(){
+    if(confirm("ลบข้อมูลที่เดินสำรวจทั้งหมด? (จุดที่บันทึกไว้ในแท็บจุดเงียบจะยังอยู่)")){ samples=[]; sset("ss_samples",samples); picked=null; updateMap(); }
+  });
+  $("map").addEventListener("click", function(e){
+    var r=this.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top, best=null, bd=28;
+    mapHits.forEach(function(mh){ var d=Math.hypot(mh.x-x,mh.y-y); if(d<bd){ bd=d; best=mh; } });
+    picked = best ? best.p : null; updateMap();
+  });
+  $("btnClear").addEventListener("click", function(){ if(confirm("ลบจุดที่บันทึกทั้งหมด?")){ spots=[]; sset("ss_spots",spots); renderSpots(); } });
+  $("spotList").addEventListener("click", function(e){
+    var id=e.target && e.target.getAttribute && e.target.getAttribute("data-del"); if(!id) return;
+    spots=spots.filter(function(s){return s.id!==id}); sset("ss_spots",spots); renderSpots();
+  });
+  document.querySelectorAll(".nav button").forEach(function(b){
+    b.addEventListener("click", function(){
+      document.querySelectorAll(".nav button").forEach(function(x){x.classList.toggle("on",x===b)});
+      document.querySelectorAll("section.tab").forEach(function(s){s.classList.toggle("on", s.id==="tab-"+b.getAttribute("data-tab"))});
+      window.scrollTo(0,0); if(b.getAttribute("data-tab")==="meter") drawChart(); if(b.getAttribute("data-tab")==="map"){ gpsMsg(); updateMap(); }
+    });
+  });
+  document.addEventListener("visibilitychange", function(){
+    if(!document.hidden && st.running && st.ctx && st.ctx.state==="suspended") st.ctx.resume();
+  });
+  window.addEventListener("resize", function(){ drawChart(); updateMap(); });
+
+  renderSpots(); render(); $("db").textContent="--"; $("arc").setAttribute("stroke-dasharray","0 "+ARC_LEN);
+  $("zone").textContent="แตะ “เริ่มวัด” เพื่อเริ่ม"; $("zone").style.color=""; $("zoneSub").textContent="ถือมือถือให้ไมโครโฟนหันเข้าหาแหล่งเสียง";
+  $("advTitle").textContent="คำแนะนำ"; $("advBody").className="muted"; $("advBody").textContent="เริ่มวัดเพื่อดูเวลาที่อยู่ในที่นั้นได้อย่างปลอดภัย และคำแนะนำป้องกันการได้ยิน"; $("advSafe").textContent=""; $("advQuiet").textContent="";
+  $("sLeq").textContent="--";$("sMax").textContent="--";$("sMin").textContent="--";
+})();
+</script>
+</body>
+</html>
